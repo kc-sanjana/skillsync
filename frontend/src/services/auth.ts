@@ -3,7 +3,7 @@ import axios, { AxiosError } from "axios";
 import { User } from "../types";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 
 interface AuthResponse {
   token: string;
@@ -74,7 +74,7 @@ const authService = {
 
     try {
       const response = await axios.get<User>(
-        `${API_BASE_URL}/users/me`,
+        `${API_BASE_URL}/auth/me`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

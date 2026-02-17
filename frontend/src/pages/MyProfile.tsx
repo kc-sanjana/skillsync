@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
-import { Match, User, APIResponse } from '../types';
+import { User, APIResponse } from '../types';
 import toast from 'react-hot-toast';
 import { Loader2, Edit3, Save, X, Star, Trophy, ArrowDownLeft } from 'lucide-react';
 
@@ -34,12 +34,9 @@ const MyProfile: React.FC = () => {
   const fetchPendingCount = useCallback(async () => {
     setLoadingMatches(true);
     try {
-      const response: APIResponse<Match[]> = await api.get('/matches');
+      const response: APIResponse<{ received: any[]; sent: any[] }> = await api.get('/matches/requests/pending');
       if (response.success && response.data) {
-        const incoming = response.data.filter(
-          (m) => m.user2.id === user?.id && m.status === 'pending'
-        );
-        setPendingCount(incoming.length);
+        setPendingCount((response.data.received || []).length);
       }
     } catch {
       // silently fail
@@ -58,10 +55,8 @@ const MyProfile: React.FC = () => {
       const payload = {
         full_name: form.full_name.trim(),
         bio: form.bio.trim(),
-        skills_teach: form.skills_teach.split(',').map((s) => s.trim()).filter(Boolean),
-        skills_learn: form.skills_learn.split(',').map((s) => s.trim()).filter(Boolean),
       };
-      const response: APIResponse<User> = await api.put('/users/me', payload);
+      const response: APIResponse<User> = await api.put(`/users/${user!.id}`, payload);
       if (response.success) {
         toast.success('Profile updated!');
         await refreshUser();

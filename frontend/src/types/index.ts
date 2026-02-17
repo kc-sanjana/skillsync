@@ -48,22 +48,30 @@ export interface UserSkill {
 }
 
 export interface Match {
-  id: string;
-  user1: User; // Full User object for user1
-  user2: User; // Full User object for user2
-  status: 'pending' | 'accepted' | 'rejected' | 'completed';
-  ai_insights: PairingInsights; // Placeholder for AI insights string, now structured
-  match_score?: number; // Adding match_score for the gauge
-  // Add other match fields as per backend Match model
+  id: number;
+  user1: User;
+  user2: User;
+  user1_id: string;
+  user2_id: string;
+  status: 'active' | 'inactive';
+  ai_insights: PairingInsights;
+  match_score?: number;
+  skill_offered?: string;
+  skill_wanted?: string;
+  created_at?: string;
 }
 
 export interface MatchRequest {
-  id: string;
-  requester_id: string;
-  target_id: string;
+  id: number;
+  sender_id: string;
+  receiver_id: string;
   status: 'pending' | 'accepted' | 'rejected';
-  ai_preview_insights: string; // Placeholder for AI preview insights string
-  // Add other match request fields as per backend MatchRequest model
+  message: string;
+  ai_preview_insights: any;
+  created_at: string;
+  responded_at?: string;
+  sender: User;
+  receiver: User;
 }
 
 export interface Message {

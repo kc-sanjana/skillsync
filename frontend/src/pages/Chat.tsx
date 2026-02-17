@@ -40,11 +40,12 @@ const Chat: React.FC = () => {
   const fetchMatches = useCallback(async () => {
     setLoadingMatches(true);
     try {
-      const response: APIResponse<Match[]> = await api.get('/matches');
+      const response: APIResponse<{ matches: Match[]; total: number }> = await api.get('/matches');
       if (response.success && response.data) {
-        setMatches(response.data);
-        if (!currentMatchId && response.data.length > 0) {
-          navigate(`/chat/${response.data[0].id}`, { replace: true });
+        const matchList = response.data.matches || [];
+        setMatches(matchList);
+        if (!currentMatchId && matchList.length > 0) {
+          navigate(`/chat/${matchList[0].id}`, { replace: true });
         }
       }
     } catch (err: any) {

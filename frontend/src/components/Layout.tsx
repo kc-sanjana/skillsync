@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { FiGrid, FiUsers, FiTarget, FiMessageSquare, FiAward, FiBarChart2, FiLogOut, FiMenu, FiX, FiUser } from 'react-icons/fi';
 import { Transition } from '@headlessui/react';
 import api from '../services/api';
-import { Match, APIResponse } from '../types';
+import { APIResponse } from '../types';
 
 
 const navItems = [
@@ -24,12 +24,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const fetchPendingCount = useCallback(async () => {
     if (!user) return;
     try {
-      const response: APIResponse<Match[]> = await api.get('/matches');
+      const response: APIResponse<{ received: any[]; sent: any[] }> = await api.get('/matches/requests/pending');
       if (response.success && response.data) {
-        const incoming = response.data.filter(
-          (m) => m.user2.id === user.id && m.status === 'pending'
-        );
-        setPendingCount(incoming.length);
+        setPendingCount((response.data.received || []).length);
       }
     } catch {
       // silently fail

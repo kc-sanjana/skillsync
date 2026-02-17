@@ -32,12 +32,12 @@ const Users: React.FC = () => {
     setError(null);
     try {
       const skillParams = skills.length > 0 ? skills.join(',') : undefined;
-      const response: APIResponse<PaginatedResponse<User>> = await api.get('/users', {
+      const response: APIResponse<{ users: User[]; total: number; page: number; pages: number }> = await api.get('/users', {
         params: { page, limit: 12, search: search || undefined, skills: skillParams },
       });
 
       if (response.success && response.data) {
-        setUsers(response.data.data);
+        setUsers(response.data.users || []);
         setCurrentPage(response.data.page);
         setTotalPages(response.data.pages);
       } else {

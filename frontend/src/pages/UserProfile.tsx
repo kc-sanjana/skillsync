@@ -67,10 +67,9 @@ const UserProfile: React.FC = () => {
     try {
       const mySkills = currentUser.skills_teach || [];
       const theirSkills = profile?.skills_learn || [];
-      const response: APIResponse<any> = await api.post('/matches', {
-        target_user_id: userId,
-        skill_offered: mySkills[0] || 'general',
-        skill_wanted: theirSkills[0] || 'general',
+      const response: APIResponse<any> = await api.post('/matches/request', {
+        receiver_id: userId,
+        message: `I'd like to exchange skills with you!`,
       });
       if (response.success) {
         toast.success('Connection request sent!');

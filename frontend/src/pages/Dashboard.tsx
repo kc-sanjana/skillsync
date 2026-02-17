@@ -28,12 +28,17 @@ const Dashboard: React.FC = () => {
       setDataLoading(true);
       setError(null);
 
-      const matchesResponse: APIResponse<Match[]> = await api.get('/matches');
-      const matchesData = matchesResponse?.success && matchesResponse.data ? matchesResponse.data : [];
-      const totalMatches = matchesData.length;
-      const pendingRequests = matchesData.filter(
-        (m) => m.user2.id === user.id && m.status === 'pending'
-      ).length;
+      const [matchesResponse, pendingResponse] = await Promise.all([
+        api.get<{ matches: Match[]; total: number }>('/matches'),
+        api.get<{ received: any[]; sent: any[] }>('/matches/requests/pending'),
+      ]);
+
+      const totalMatches = matchesResponse?.success && matchesResponse.data
+        ? (matchesResponse.data.matches || []).length
+        : 0;
+      const pendingRequests = pendingResponse?.success && pendingResponse.data
+        ? (pendingResponse.data.received || []).length
+        : 0;
 
       setStats({
         totalMatches,

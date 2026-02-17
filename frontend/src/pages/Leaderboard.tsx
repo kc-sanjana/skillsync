@@ -33,7 +33,7 @@ const Leaderboard: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response: APIResponse<PaginatedResponse<LeaderboardUser>> = await api.get('/leaderboard', {
+      const response: APIResponse<{ entries: any[]; category: string }> = await api.get('/leaderboard', {
         params: {
           category: activeCategory,
           limit: 10,
@@ -41,14 +41,14 @@ const Leaderboard: React.FC = () => {
       });
 
       if (response.success && response.data) {
-        const items = response.data.data || [];
-        const ranked = items.map((u: any, i: number) => ({
-          ...u,
-          id: u.id || u.user_id,
-          score: u.score ?? u.overall_score ?? 0,
-          full_name: u.full_name || u.username || '',
-          reputation_score: u.reputation_score ?? u.overall_score ?? 0,
-          rank: u.rank || i + 1,
+        const items = response.data.entries || [];
+        const ranked = items.map((entry: any, i: number) => ({
+          ...entry.user,
+          id: entry.user?.id || entry.id,
+          score: entry.reputation?.overall_score ?? entry.score ?? 0,
+          full_name: entry.user?.full_name || entry.user?.username || '',
+          reputation_score: entry.reputation?.overall_score ?? entry.user?.reputation_score ?? 0,
+          rank: entry.rank || i + 1,
         }));
         setLeaderboardUsers(ranked);
       } else {

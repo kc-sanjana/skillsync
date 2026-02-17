@@ -4,7 +4,7 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import useWebSocket from '../hooks/useWebSocket';
 import { APIResponse, Match, Message } from '../types';
-import { FiSend, FiLoader, FiMessageSquare, FiSearch } from 'react-icons/fi';
+import { FiSend, FiLoader, FiMessageSquare } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const Chat: React.FC = () => {
@@ -16,13 +16,26 @@ const Chat: React.FC = () => {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [loadingMatches, setLoadingMatches] = useState(true);
   const [messageInput, setMessageInput] = useState('');
+  const [historyMessages, setHistoryMessages] = useState<Message[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { messages, isConnected, sendMessage } = useWebSocket({
+  const { messages: wsMessages, isConnected, sendMessage } = useWebSocket({
     token,
     matchId: currentMatchId || null,
   });
+
+  // Combine history + live WebSocket messages, deduplicating by id
+  const allMessages = React.useMemo(() => {
+    const combined = [...historyMessages];
+    for (const wsMsg of wsMessages) {
+      if (!combined.some((m) => m.id && wsMsg.id && String(m.id) === String(wsMsg.id))) {
+        combined.push(wsMsg);
+      }
+    }
+    return combined;
+  }, [historyMessages, wsMessages]);
 
   const fetchMatches = useCallback(async () => {
     setLoadingMatches(true);
@@ -31,7 +44,7 @@ const Chat: React.FC = () => {
       if (response.success && response.data) {
         setMatches(response.data);
         if (!currentMatchId && response.data.length > 0) {
-            navigate(`/chat/${response.data[0].id}`, { replace: true });
+          navigate(`/chat/${response.data[0].id}`, { replace: true });
         }
       }
     } catch (err: any) {
@@ -45,21 +58,45 @@ const Chat: React.FC = () => {
     fetchMatches();
   }, [fetchMatches]);
 
+  // Load message history when match changes
+  useEffect(() => {
+    if (!currentMatchId) {
+      setHistoryMessages([]);
+      return;
+    }
+
+    const loadHistory = async () => {
+      setLoadingHistory(true);
+      try {
+        const response: APIResponse<Message[]> = await api.get(`/matches/${currentMatchId}/messages`);
+        if (response.success && response.data) {
+          setHistoryMessages(response.data);
+        }
+      } catch {
+        // History loading is best-effort
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+
+    loadHistory();
+  }, [currentMatchId]);
+
   useEffect(() => {
     if (currentMatchId && matches.length > 0) {
-      const match = matches.find((m) => m.id === currentMatchId);
+      // Use loose comparison to handle string vs number mismatch
+      const match = matches.find((m) => String(m.id) === String(currentMatchId));
       setSelectedMatch(match || null);
     } else if (matches.length > 0 && !currentMatchId) {
       setSelectedMatch(matches[0]);
-    }
-    else {
+    } else {
       setSelectedMatch(null);
     }
   }, [currentMatchId, matches]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [allMessages]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +105,7 @@ const Chat: React.FC = () => {
       setMessageInput('');
     }
   };
-  
+
   if (!currentUser) return null;
 
   const partner = selectedMatch
@@ -85,11 +122,16 @@ const Chat: React.FC = () => {
         <div className="flex-1 overflow-y-auto">
           {loadingMatches ? (
             <div className="flex items-center justify-center p-8"><FiLoader className="h-6 w-6 animate-spin text-primary" /></div>
+          ) : matches.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-8 text-text-secondary">
+              <FiMessageSquare className="h-8 w-8 mb-2" />
+              <p className="text-sm">No active matches yet</p>
+            </div>
           ) : (
             <div>
               {matches.map((match) => {
                 const matchPartner = match.user1.id === currentUser.id ? match.user2 : match.user1;
-                const isActive = match.id === currentMatchId;
+                const isActive = String(match.id) === String(currentMatchId);
                 const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(matchPartner.username)}&background=random&color=fff`;
                 return (
                   <Link key={match.id} to={`/chat/${match.id}`}
@@ -117,35 +159,47 @@ const Chat: React.FC = () => {
                     <h3 className="font-bold text-lg text-text-primary">{partner.full_name || partner.username}</h3>
                     <div className={`text-xs flex items-center gap-2 ${isConnected ? 'text-green-500' : 'text-text-secondary'}`}>
                         <span className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                        {isConnected ? 'Online' : 'Offline'}
+                        {isConnected ? 'Online' : 'Connecting...'}
                     </div>
                 </div>
             </div>
 
             <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
-              <div className="space-y-6">
-                {messages.map((msg, index) => (
-                    <div key={msg.id || index} className={`flex gap-3 ${msg.sender_id === currentUser.id ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender_id === currentUser.id ? (currentUser.full_name || currentUser.username) : partner.username)}&background=random&color=fff&size=96`} alt="avatar" className="h-8 w-8 rounded-full" />
-                    <div className={`p-4 rounded-large max-w-lg ${msg.sender_id === currentUser.id ? 'bg-primary text-white rounded-br-none' : 'bg-white text-text-primary shadow-sm rounded-bl-none'}`}>
-                        <p>{msg.content}</p>
-                        <p className={`text-xs mt-2 opacity-70 ${msg.sender_id === currentUser.id ? 'text-right' : 'text-left'}`}>
-                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
+              {loadingHistory ? (
+                <div className="flex items-center justify-center h-full">
+                  <FiLoader className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {allMessages.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-full text-text-secondary py-12">
+                      <FiMessageSquare className="h-10 w-10 mb-2" />
+                      <p className="text-sm">No messages yet. Say hello!</p>
                     </div>
-                    </div>
-                ))}
-              </div>
+                  )}
+                  {allMessages.map((msg, index) => (
+                      <div key={msg.id || index} className={`flex gap-3 ${msg.sender_id === currentUser.id ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender_id === currentUser.id ? (currentUser.full_name || currentUser.username) : partner.username)}&background=random&color=fff&size=96`} alt="avatar" className="h-8 w-8 rounded-full" />
+                      <div className={`p-4 rounded-large max-w-lg ${msg.sender_id === currentUser.id ? 'bg-primary text-white rounded-br-none' : 'bg-white text-text-primary shadow-sm rounded-bl-none'}`}>
+                          <p>{msg.content}</p>
+                          <p className={`text-xs mt-2 opacity-70 ${msg.sender_id === currentUser.id ? 'text-right' : 'text-left'}`}>
+                              {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                      </div>
+                      </div>
+                  ))}
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
-            
+
             <div className="p-4 border-t border-border bg-white">
               <form onSubmit={handleSendMessage} className="flex items-center gap-4">
                 <input
                   type="text"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  placeholder="Type your message..."
+                  placeholder={isConnected ? "Type your message..." : "Connecting..."}
                   className="w-full bg-gray-100 border-transparent focus:border-transparent focus:ring-0 rounded-lg px-4 py-3"
                   disabled={!isConnected}
                 />

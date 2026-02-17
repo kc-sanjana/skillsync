@@ -3,15 +3,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Message } from "../types";
 
 /**
- * ✅ Vite-compatible environment variable
+ * Vite-compatible environment variable
  */
 const WS_BASE_URL =
   import.meta.env.VITE_WS_BASE_URL || "ws://localhost:8080";
-
-interface WebSocketMessagePayload {
-  type: string;
-  data: any;
-}
 
 interface UseWebSocketProps {
   token: string | null;
@@ -51,30 +46,43 @@ const useWebSocket = ({ token, matchId }: UseWebSocketProps) => {
     };
 
     ws.current.onmessage = (event) => {
-      const parsed: WebSocketMessagePayload = JSON.parse(event.data);
+      try {
+        const parsed = JSON.parse(event.data);
 
-      switch (parsed.type) {
-        case "message":
-          setMessages((prev) => [...prev, parsed.data as Message]);
-          break;
+        switch (parsed.type) {
+          case "chat_message":
+            if (parsed.message) {
+              const msg: Message = {
+                id: parsed.message.id?.toString() || "",
+                match_id: parsed.message.match_id?.toString() || matchId || "",
+                sender_id: parsed.message.sender_id || "",
+                content: parsed.message.content || "",
+                timestamp: parsed.message.created_at || parsed.timestamp || new Date().toISOString(),
+              };
+              setMessages((prev) => [...prev, msg]);
+            }
+            break;
 
-        case "typing":
-          setTypingUsers((prev) => {
-            const username = parsed.data.username;
-            return parsed.data.isTyping
-              ? prev.includes(username)
-                ? prev
-                : [...prev, username]
-              : prev.filter((u) => u !== username);
-          });
-          break;
+          case "typing_indicator":
+            setTypingUsers((prev) => {
+              const userId = parsed.user_id;
+              return parsed.is_typing
+                ? prev.includes(userId)
+                  ? prev
+                  : [...prev, userId]
+                : prev.filter((u) => u !== userId);
+            });
+            break;
 
-        case "code_change":
-          console.log("Code change:", parsed.data.code);
-          break;
+          case "code_change":
+            console.log("Code change:", parsed.code);
+            break;
 
-        default:
-          console.warn("Unknown WS message:", parsed.type);
+          default:
+            console.warn("Unknown WS message:", parsed.type);
+        }
+      } catch (err) {
+        console.error("Failed to parse WS message:", err);
       }
     };
 
@@ -112,12 +120,12 @@ const useWebSocket = ({ token, matchId }: UseWebSocketProps) => {
   }, []);
 
   const sendMessage = useCallback(
-    (content: string) => sendWebSocketMessage("message", { content }),
+    (content: string) => sendWebSocketMessage("chat_message", { content }),
     [sendWebSocketMessage]
   );
 
   const sendTyping = useCallback(
-    (isTyping: boolean) => sendWebSocketMessage("typing", { isTyping }),
+    (isTyping: boolean) => sendWebSocketMessage("typing_indicator", { is_typing: isTyping }),
     [sendWebSocketMessage]
   );
 
@@ -137,4 +145,3 @@ const useWebSocket = ({ token, matchId }: UseWebSocketProps) => {
 };
 
 export default useWebSocket;
-

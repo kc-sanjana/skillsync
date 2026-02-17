@@ -238,7 +238,7 @@ const Matches: React.FC = () => {
                         Chat
                       </Link>
                       <Link
-                        to={`/chat/${match.id}`}
+                        to={`/match/${match.id}`}
                         className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white py-2 text-xs font-medium text-gray-600 transition-all hover:bg-gray-50 hover:text-gray-900"
                       >
                         <UserCheck className="h-3.5 w-3.5" />

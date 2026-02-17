@@ -48,7 +48,8 @@ const App: React.FC = () => {
             <Route path="/users" element={<Layout><Users /></Layout>} />
             <Route path="/matches" element={<Layout><Matches /></Layout>} />
             <Route path="/chat" element={<Layout><Chat /></Layout>} />
-            <Route path="/chat/:matchId" element={<Layout><MatchDetail /></Layout>} />
+            <Route path="/chat/:matchId" element={<Layout><Chat /></Layout>} />
+            <Route path="/match/:matchId" element={<Layout><MatchDetail /></Layout>} />
             <Route path="/assessment" element={<Layout><Assessment /></Layout>} />
             <Route path="/my-profile" element={<Layout><MyProfile /></Layout>} />
             <Route path="/profile/:userId" element={<Layout><UserProfile /></Layout>} />

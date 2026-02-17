@@ -42,7 +42,14 @@ const Leaderboard: React.FC = () => {
 
       if (response.success && response.data) {
         const items = response.data.data || [];
-        const ranked = items.map((u, i) => ({ ...u, rank: i + 1 }));
+        const ranked = items.map((u: any, i: number) => ({
+          ...u,
+          id: u.id || u.user_id,
+          score: u.score ?? u.overall_score ?? 0,
+          full_name: u.full_name || u.username || '',
+          reputation_score: u.reputation_score ?? u.overall_score ?? 0,
+          rank: u.rank || i + 1,
+        }));
         setLeaderboardUsers(ranked);
       } else {
         setLeaderboardUsers([]);

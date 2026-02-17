@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { Match, APIResponse } from '../types';
-import { FiUsers, FiClipboard, FiStar, FiArrowRight, FiSearch, FiAward, FiTrendingUp, FiLoader } from 'react-icons/fi';
+import { FiUsers, FiClipboard, FiStar, FiArrowRight, FiSearch, FiAward, FiTrendingUp, FiLoader, FiInbox } from 'react-icons/fi';
 
 interface DashboardStats {
   totalMatches: number;
   completedSessions: number;
   reputationScore: number;
+  pendingRequests: number;
 }
 
 const Dashboard: React.FC = () => {
@@ -28,13 +29,17 @@ const Dashboard: React.FC = () => {
       setError(null);
 
       const matchesResponse: APIResponse<Match[]> = await api.get('/matches');
-      const totalMatches =
-        matchesResponse?.success && matchesResponse.data ? matchesResponse.data.length : 0;
+      const matchesData = matchesResponse?.success && matchesResponse.data ? matchesResponse.data : [];
+      const totalMatches = matchesData.length;
+      const pendingRequests = matchesData.filter(
+        (m) => m.user2.id === user.id && m.status === 'pending'
+      ).length;
 
       setStats({
         totalMatches,
         completedSessions: user.total_sessions || 0,
         reputationScore: parseFloat(user.reputation_score?.toFixed(1) || '0.0'),
+        pendingRequests,
       });
     } catch (err: any) {
       console.error('Failed to fetch dashboard data:', err);
@@ -49,9 +54,10 @@ const Dashboard: React.FC = () => {
   }, [fetchData]);
 
   const statCards = [
-    { key: 'totalMatches' as const, label: 'Total Matches', icon: FiUsers, value: stats?.totalMatches },
-    { key: 'completedSessions' as const, label: 'Sessions Completed', icon: FiClipboard, value: stats?.completedSessions },
-    { key: 'reputationScore' as const, label: 'Reputation Score', icon: FiStar, value: stats?.reputationScore },
+    { key: 'totalMatches' as const, label: 'Total Matches', icon: FiUsers, value: stats?.totalMatches, link: undefined as string | undefined },
+    { key: 'pendingRequests' as const, label: 'Pending Requests', icon: FiInbox, value: stats?.pendingRequests, link: '/matches' },
+    { key: 'completedSessions' as const, label: 'Sessions Completed', icon: FiClipboard, value: stats?.completedSessions, link: undefined as string | undefined },
+    { key: 'reputationScore' as const, label: 'Reputation Score', icon: FiStar, value: stats?.reputationScore, link: undefined as string | undefined },
   ];
 
   const quickActions = [
@@ -104,18 +110,28 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {statCards.map(({ key, label, icon: Icon, value }) => (
-          <div key={key} className="bg-card-bg rounded-large shadow-card p-6 transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-card-hover">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-text-secondary">{label}</p>
-              <div className="bg-primary/10 p-2 rounded-lg">
-                <Icon className="h-5 w-5 text-primary" />
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {statCards.map(({ key, label, icon: Icon, value, link }) => {
+          const card = (
+            <div className={`bg-card-bg rounded-large shadow-card p-6 transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-card-hover ${link ? 'cursor-pointer' : ''}`}>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-text-secondary">{label}</p>
+                <div className="bg-primary/10 p-2 rounded-lg">
+                  <Icon className="h-5 w-5 text-primary" />
+                </div>
               </div>
+              <p className="mt-4 text-4xl font-bold text-text-primary">{value ?? '0'}</p>
+              {link && (value ?? 0) > 0 && (
+                <p className="mt-2 text-xs font-medium text-primary">View requests →</p>
+              )}
             </div>
-            <p className="mt-4 text-4xl font-bold text-text-primary">{value ?? '0'}</p>
-          </div>
-        ))}
+          );
+          return link ? (
+            <Link key={key} to={link}>{card}</Link>
+          ) : (
+            <div key={key}>{card}</div>
+          );
+        })}
       </div>
 
       {/* Quick Actions */}

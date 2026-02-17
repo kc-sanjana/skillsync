@@ -1,13 +1,16 @@
-import React, { useState, Fragment } from 'react';
+import React, { useState, useEffect, useCallback, Fragment } from 'react';
 import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { FiGrid, FiUsers, FiTarget, FiMessageSquare, FiAward, FiBarChart2, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
+import { FiGrid, FiUsers, FiTarget, FiMessageSquare, FiAward, FiBarChart2, FiLogOut, FiMenu, FiX, FiUser } from 'react-icons/fi';
 import { Transition } from '@headlessui/react';
+import api from '../services/api';
+import { Match, APIResponse } from '../types';
 
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: FiGrid },
   { to: '/matches', label: 'Find Collaborators', icon: FiUsers },
+  { to: '/my-profile', label: 'My Profile', icon: FiUser },
   { to: '/assessment', label: 'Skill Assessment', icon: FiAward },
   { to: '/leaderboard', label: 'Leaderboard', icon: FiBarChart2 },
 ];
@@ -15,7 +18,27 @@ const navItems = [
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const location = useLocation();
+
+  const fetchPendingCount = useCallback(async () => {
+    if (!user) return;
+    try {
+      const response: APIResponse<Match[]> = await api.get('/matches');
+      if (response.success && response.data) {
+        const incoming = response.data.filter(
+          (m) => m.user2.id === user.id && m.status === 'pending'
+        );
+        setPendingCount(incoming.length);
+      }
+    } catch {
+      // silently fail
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchPendingCount();
+  }, [fetchPendingCount, location.pathname]);
 
   const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
     user?.full_name || user?.username || 'U'
@@ -47,7 +70,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             }
           >
             <Icon className="h-5 w-5" />
-            <span>{label}</span>
+            <span className="flex-1">{label}</span>
+            {to === '/matches' && pendingCount > 0 && (
+              <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
+                {pendingCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

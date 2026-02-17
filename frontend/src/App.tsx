@@ -17,6 +17,7 @@ import MatchDetail from './pages/MatchDetail';
 import Assessment from './pages/Assessment';
 import UserProfile from './pages/UserProfile';
 import Leaderboard from './pages/Leaderboard';
+import MyProfile from './pages/MyProfile';
 import NotFound from './pages/NotFound';
 
 const App: React.FC = () => {
@@ -49,6 +50,7 @@ const App: React.FC = () => {
             <Route path="/chat" element={<Layout><Chat /></Layout>} />
             <Route path="/chat/:matchId" element={<Layout><MatchDetail /></Layout>} />
             <Route path="/assessment" element={<Layout><Assessment /></Layout>} />
+            <Route path="/my-profile" element={<Layout><MyProfile /></Layout>} />
             <Route path="/profile/:userId" element={<Layout><UserProfile /></Layout>} />
             <Route path="/leaderboard" element={<Layout><Leaderboard /></Layout>} />
           </Route>

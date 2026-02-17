@@ -1,0 +1,28 @@
+# Environment & secrets
+.env
+.env.local
+.env.production
+backend/.env
+
+# Go
+/bin/
+/tmp/
+*.exe
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+pgdata/

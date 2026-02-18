@@ -129,7 +129,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // 🌐 SOCIAL LOGINS
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
 
   const loginWithGoogle = () => {
     window.location.href = `${API_BASE}/auth/google/login`;

@@ -136,8 +136,16 @@ func (s *UserService) UpdateProfile(id string, updates map[string]interface{}) e
 // SearchUsers
 // ---------------------------------------------------------------------------
 
-func (s *UserService) SearchUsers(skills []string, skillLevel string, limit, offset int) ([]*domain.User, int64, error) {
+func (s *UserService) SearchUsers(skills []string, skillLevel string, search string, limit, offset int) ([]*domain.User, int64, error) {
 	query := s.db.Model(&domain.User{})
+
+	if search != "" {
+		like := "%" + strings.ToLower(search) + "%"
+		query = query.Where(
+			"LOWER(full_name) LIKE ? OR LOWER(username) LIKE ? OR LOWER(bio) LIKE ?",
+			like, like, like,
+		)
+	}
 
 	if len(skills) > 0 {
 		query = query.Where(

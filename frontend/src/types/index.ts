@@ -1,5 +1,21 @@
 // src/types/index.ts
 
+export interface BackendUserSkill {
+  id: number;
+  user_id: string;
+  skill_id: number;
+  proficiency_level: 'beginner' | 'intermediate' | 'advanced';
+  years_experience: number;
+  credibility_score: number;
+  verified_by_peers: number;
+  skill: {
+    id: number;
+    name: string;
+    category: string;
+    description: string;
+  };
+}
+
 export interface User {
   id: string;
   username: string;
@@ -7,13 +23,12 @@ export interface User {
   full_name: string;
   bio?: string;
   avatar_url?: string;
-  skills_teach?: string[];
-  skills_learn?: string[];
   skill_level?: string;
   reputation_score: number;
   total_sessions: number;
   badges: string[];
   is_online?: boolean;
+  skills?: BackendUserSkill[];
 }
 
 export interface UserProfile extends User {

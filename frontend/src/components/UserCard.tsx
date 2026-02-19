@@ -12,7 +12,10 @@ const UserCard: React.FC<UserCardProps> = ({ user }) => {
     user.full_name || user.username
   )}&background=random&color=fff&bold=true&rounded=true`;
 
-  const userSkills = [...(user.skills_teach || []), ...(user.skills_learn || [])].slice(0, 3);
+  const userSkills = (user.skills || [])
+    .map((s) => s.skill?.name)
+    .filter((name): name is string => Boolean(name))
+    .slice(0, 3);
 
   return (
     <div className="bg-card-bg rounded-large shadow-card p-6 flex flex-col h-full transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-card-hover">

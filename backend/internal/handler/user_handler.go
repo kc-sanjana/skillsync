@@ -65,9 +65,10 @@ func (h *UserHandler) GetUsers(c echo.Context) error {
 		skills = strings.Split(s, ",")
 	}
 	level := c.QueryParam("level")
+	search := c.QueryParam("search")
 
 	offset := (page - 1) * limit
-	users, total, err := h.userService.SearchUsers(skills, level, limit, offset)
+	users, total, err := h.userService.SearchUsers(skills, level, search, limit, offset)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to search users"})
 	}
